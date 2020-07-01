@@ -1,0 +1,3 @@
+cut-body-after = "---"
+
+status = [ "Tests", "MSRV", "Style", "Miri" ]
