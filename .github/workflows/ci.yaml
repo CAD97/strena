@@ -148,6 +148,7 @@ jobs:
         with:
           toolchain: nightly
           profile: minimal
+          components: miri
           override: true
 
       - name: Generate lockfile
