@@ -71,7 +71,7 @@ jobs:
           override: true
 
       - name: Generate lockfile
-        run: cargo +nightly-2020-01-01 -Z minimal-versions generate-lockfile
+        run: cargo +nightly-2020-06-30 -Z minimal-versions generate-lockfile
 
       - name: Cargo target cache
         uses: actions/cache@v1
@@ -132,7 +132,7 @@ jobs:
       
       - name: Check docs
         if: ${{ !cancelled() }}
-        run: cargo +nightly doc --all-features --no-deps
+        run: cargo +nightly-2020-06-30 doc --all-features --no-deps
 
   miri:
     name: Miri
