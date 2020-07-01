@@ -1,0 +1,166 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - staging
+      - trying
+
+
+env:
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Generate lockfile
+        run: cargo generate-lockfile
+
+      - name: Cargo target cache
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-test-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compile
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --all-targets --examples --no-run
+
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --all-targets --examples
+
+  msrv:
+    name: MSRV
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2020-06-30 # arbitrary nightly version
+          profile: minimal
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.32.0
+          profile: minimal
+          override: true
+
+      - name: Generate lockfile
+        run: cargo +nightly-2020-01-01 -Z minimal-versions generate-lockfile
+
+      - name: Cargo target cache
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-msrv-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --all-features
+
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -D warnings
+      RUSTDOCFLAGS: -D warnings --cfg docs
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2020-06-30 # arbitrary nightly version
+          profile: minimal
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.44.1 # arbitrary stable version
+          profile: minimal
+          components: clippy, rustfmt
+          override: true
+
+      - name: Generate lockfile
+        run: cargo generate-lockfile
+
+      - name: Cargo target cache
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-style-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ github.token }}
+          args: --all-targets
+
+      - name: Check rustfmt
+        if: ${{ !cancelled() }}
+        run: cargo fmt --all -- --check
+      
+      - name: Check docs
+        if: ${{ !cancelled() }}
+        run: cargo +nightly doc --all-features --no-deps
+
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Generate lockfile
+        run: cargo generate-lockfile
+
+      - name: Cargo target cache
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-miri-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup miri
+        run: cargo miri setup
+
+      - name: Run miri
+        run: cargo miri test --all-features

@@ -1,0 +1,39 @@
+[package]
+name = "strena"
+version = "0.0.0"
+edition = "2018"
+
+authors = ["Christopher Durham (CAD97) <cad97@cad97.com>"]
+
+[dependencies.ahash]
+version = "0.3"
+default-features = false
+
+[dependencies.hashbrown]
+version = "0.8"
+default-features = false
+
+[dependencies.rayon]
+version = "1.3.1"
+optional = true
+
+[features]
+
+# Enable ahash's compile-time RNG feature, so that RNG seeds are impacted by build-time RNG.
+# This makes HashMap seeds even harder to determine, but prevents reproducable builds.
+compile-time-rng = ["ahash/compile-time-rng"]
+
+# Aggressively inline the functionality provided by this crate. Note that 99% of this crate
+# is already monomorphized into consumers, and thus this just further inlines the functionality
+# into every CGU of dependent crates, moving work from thin-crate LTO to codegen. This can cause
+# a significant increase in compile time for some slight (unmeasured) performance benefits. 
+inline-more = []
+
+# Inline aggressively, and also tell hashbrown to inline aggressively.
+inline-even-more = ["inline-more", "hashbrown/inline-more"]
+
+# Enable parallel iteration support via rayon.
+# rayon = ["rayon"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg=docs"]
