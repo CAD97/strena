@@ -59,7 +59,7 @@ jobs:
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2020-06-30 # arbitrary nightly version
+          toolchain: nightly-2019-06-30 # arbitrary nightly version with v1 lockfile
           profile: minimal
 
       - name: Install toolchain
@@ -71,13 +71,19 @@ jobs:
           override: true
 
       - name: Generate lockfile
-        run: cargo +nightly-2020-06-30 -Z minimal-versions generate-lockfile
+        run: cargo +nightly-2019-06-30 -Z minimal-versions generate-lockfile
 
       - name: Cargo target cache
         uses: actions/cache@v1
         with:
           path: target
           key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-msrv-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cargo bin cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-style-bin-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check
         uses: actions-rs/cargo@v1
