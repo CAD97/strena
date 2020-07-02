@@ -31,7 +31,7 @@ memory held by the interner.
 
 ## Minimum Supported Rust Version
 
-The same as Hashbrown's, which is currently 1.32.
+1.36, the first version with stable access to the `alloc` crate.
 
 This minimum version support is informal, and may change with any version.
 It will, however, not be regressed without specific reasoning for upgrading.
