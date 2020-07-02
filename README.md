@@ -12,10 +12,6 @@ memory held by the interner.
 
 ## Cargo Features
 
-- `compile-time-rng`: Enable ahash's compile-time RNG feature,
-  so that RNG seeds are impacted by build-time RNG. This makes hash
-  seeds even harder to determine, but prevents reproducable builds.
-
 - `inline-more`: Aggressively inline functions defined in this crate.
   Note that 99% of this crate is already monomorphized into consumers,
   and thus this just further inlines the functionality into every CGU
@@ -23,14 +19,22 @@ memory held by the interner.
   This can cause a significant increase in compile time for some slight
   (unmeasured) performance benefits.
 
-- `inline-even-more`:
+- `inline-even-more`: Do aggressive inlining, and aggressively inline
+  hashbrown's hashtable implementation as well. Further compile-time
+  impact for further slight (unmeasured) performance benefits.
 
+- `rayon`: Support parallel iteration of symbols via [rayon].
+
+  [rayon]: <https://docs.rs/rayon/>
   [arena]: <https://stackoverflow.com/q/12825148/3019990>
   [interning]: <https://en.wikipedia.org/wiki/String_interning>
 
 ## Minimum Supported Rust Version
 
-The same as Hashbrown's, which is currently 1.32.
+1.36, the first version with stable access to the `alloc` crate.
+
+This minimum version support is informal, and may change with any version.
+It will, however, not be regressed without specific reasoning for upgrading.
 
 ## License
 

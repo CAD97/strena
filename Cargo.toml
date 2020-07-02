@@ -19,10 +19,6 @@ optional = true
 
 [features]
 
-# Enable ahash's compile-time RNG feature, so that RNG seeds are impacted by build-time RNG.
-# This makes HashMap seeds even harder to determine, but prevents reproducable builds.
-compile-time-rng = ["ahash/compile-time-rng"]
-
 # Aggressively inline the functionality provided by this crate. Note that 99% of this crate
 # is already monomorphized into consumers, and thus this just further inlines the functionality
 # into every CGU of dependent crates, moving work from thin-crate LTO to codegen. This can cause

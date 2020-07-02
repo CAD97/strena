@@ -59,19 +59,19 @@ jobs:
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2020-06-30 # arbitrary nightly version
+          toolchain: nightly-2019-06-30 # arbitrary nightly version with v1 lockfile
           profile: minimal
 
       - name: Install toolchain
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.32.0
+          toolchain: 1.36.0
           profile: minimal
           override: true
 
       - name: Generate lockfile
-        run: cargo +nightly-2020-01-01 -Z minimal-versions generate-lockfile
+        run: cargo +nightly-2019-06-30 -Z minimal-versions generate-lockfile
 
       - name: Cargo target cache
         uses: actions/cache@v1
@@ -132,7 +132,7 @@ jobs:
       
       - name: Check docs
         if: ${{ !cancelled() }}
-        run: cargo +nightly doc --all-features --no-deps
+        run: cargo +nightly-2020-06-30 doc --all-features --no-deps
 
   miri:
     name: Miri
@@ -148,6 +148,7 @@ jobs:
         with:
           toolchain: nightly
           profile: minimal
+          components: miri
           override: true
 
       - name: Generate lockfile
