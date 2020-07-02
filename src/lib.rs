@@ -10,10 +10,6 @@
 //!
 //! # Features
 //!
-//! - `compile-time-rng`: Enable ahash's compile-time RNG feature,
-//!   so that RNG seeds are impacted by build-time RNG. This makes hash
-//!   seeds even harder to determine, but prevents reproducable builds.
-//!
 //! - `inline-more`: Aggressively inline functions defined in this crate.
 //!   Note that 99% of this crate is already monomorphized into consumers,
 //!   and thus this just further inlines the functionality into every CGU
