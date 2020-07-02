@@ -17,8 +17,13 @@
 //!   This can cause a significant increase in compile time for some slight
 //!   (unmeasured) performance benefits.
 //!
-//! - `inline-even-more`:
+//! - `inline-even-more`: Do aggressive inlining, and aggressively inline
+//!   hashbrown's hashtable implementation as well. Further compile-time
+//!   impact for further slight (unmeasured) performance benefits.
 //!
+//! - `rayon`: Support parallel iteration of symbols via [rayon].
+//!
+#![cfg_attr(not(feature = "rayon"), doc = "  [rayon]: <https://docs.rs/rayon/>")]
 //!   [arena]: <https://stackoverflow.com/q/12825148/3019990>
 //!   [interning]: <https://en.wikipedia.org/wiki/String_interning>
 
@@ -40,6 +45,8 @@ mod iter;
 #[cfg(feature = "rayon")]
 mod par_iter;
 
+#[allow(unused)]
+use core::{u16, u32};
 pub use iter::Iter;
 #[cfg(feature = "rayon")]
 pub use par_iter::ParIter;
@@ -69,11 +76,15 @@ struct Opaque<T>(T);
 type Idx = u32;
 #[cfg(not(target_pointer_width = "16"))]
 type NonZeroIdx = core::num::NonZeroU32;
+#[cfg(not(target_pointer_width = "16"))]
+const IDX_MAX: u32 = core::u32::MAX;
 
 #[cfg(target_pointer_width = "16")]
 type Idx = u16;
 #[cfg(target_pointer_width = "16")]
 type NonZeroIdx = core::num::NonZeroU16;
+#[cfg(target_pointer_width = "16")]
+const IDX_MAX: u16 = core::u16::MAX;
 
 #[derive(Debug, Copy, Clone)]
 /// A span of an interned string in the backing string.
@@ -98,9 +109,9 @@ impl Span {
 /// An interned string.
 ///
 /// A `Symbol` is only as big as `u32` or `usize`, whichever is smaller.
-/// For most platforms, that means `Symbol` is a `u32`. `Symbol` can
-/// represent at least `i32::MAX` or `isize::MAX` distinct symbols,
-/// whichever is smaller. The exact limit is unspecified.
+/// For most platforms, that means `Symbol` is the size of a `u32`.
+/// The exact number of `Symbol`s supported by a single [`Interner`] is
+/// unspecified, but less than `isize::MAX`.
 ///
 /// Additionally, `Option<Symbol>` and `Symbol` have the same size.
 /// (`Symbol` has at least one niche for `Option` to use.)
@@ -109,13 +120,17 @@ impl Span {
 /// Symbols from different interners compare stably, but arbitrarily.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub struct Symbol {
+    // NB: According to experimental checks, Symbol needs to have a range of
+    // maximally 0x3000_0000 symbols in 32 bit mode and 0x6000 in 16 bit mode.
+    // 32 bit: 779,703,276 unique strings; 16 bit: 20,962 unique strings.
+    // More strings than that overflows the interner's backing string.
     raw: NonZeroIdx, // FUTURE: make the niche be the top bit, not 0?
 }
 
 impl Symbol {
     /// Convert the symbol into a `usize` appropriate for indexing side tables.
     ///
-    /// The indexes are continuous, starting at 0.
+    /// The indexes are continuous starting at 0 and never exceed `isize::MAX`.
     #[inline(always)]
     pub fn ix(self) -> usize {
         self.raw.get() as usize - 1
@@ -136,6 +151,13 @@ impl Symbol {
 /// The main drawback of this approach is that references to the actual
 /// interned strings cannot live accross calls that may intern new symbols.
 /// (This can be made possible by non-moving arena techniques.)
+///
+/// This means that this interner can store a theoretical maximum of 4GiB of
+/// unique strings on 32/64bit platforms, and 64KiB on 16 bit platforms.
+/// This comes out to a maximum of about 2<sup>29.5</sup> unique strings
+/// for 32/64 bit platforms, and 2<sup>14.5</sup> for 16 bit platforms.
+/// Realistically, at that point, you're running up against memory limitations
+/// anyway, so won't be able to keep all of the strings in memory anyway.
 ///
 /// The default hashing algorithm is [aHash][ahash], though this is subject
 /// to change at any point in the future. The hash function is very fast for
@@ -265,7 +287,7 @@ fn insert_substring(string: &mut String, s: &str) -> Span {
     if string
         .len()
         .checked_add(s.len())
-        .map(|end| end > Idx::MAX as usize)
+        .map(|end| end > IDX_MAX as usize)
         .unwrap_or(true)
     {
         panic!("Interner overflowed")

@@ -79,12 +79,6 @@ jobs:
           path: target
           key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-msrv-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Cargo bin cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/bin
-          key: ${{ runner.os }}-${{ steps.toolchain.outputs.rustc_hash }}-style-bin-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Check
         uses: actions-rs/cargo@v1
         with:
